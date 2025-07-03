@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@color/background"
+    android:layout_height="match_parent"
+    tools:ignore="ExtraText">
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Fast Task"
+        android:textColor="@color/textAndLogo"
+        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/cardView"
+        tools:ignore="MissingConstraints">
+
+    </TextView>
+
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardView"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+
+        android:layout_marginTop="70dp"
+        app:cardBackgroundColor="@color/textAndLogo"
+        app:cardCornerRadius="20dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="MissingConstraints">
+
+        <ImageView
+            android:layout_width="89dp"
+            android:layout_height="61dp"
+            android:layout_gravity="center"
+            android:contentDescription="App Logo"
+            android:scaleType="centerInside"
+            android:src="@drawable/Logo" />
+    </androidx.cardview.widget.CardView>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardView3"
+        android:layout_width="383dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="60dp"
+        app:cardBackgroundColor="@color/buttons"
+        app:cardCornerRadius="20dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView2"
+        tools:ignore="MissingConstraints">
+
+        <EditText
+            android:id="@+id/username_input"
+            android:layout_width="347dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:hint="Enter a username"
+            android:inputType="text"
+            android:paddingStart="10dp"
+            android:paddingEnd="20dp"
+            android:textColor="@color/textAndLogo"
+            android:textColorHint="@color/textAndLogo"
+            android:textSize="18dp">
+
+        </EditText>
+
+    </androidx.cardview.widget.CardView>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardView4"
+        android:layout_width="383dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="60dp"
+        app:cardBackgroundColor="@color/buttons"
+        app:cardCornerRadius="20dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/cardView3"
+        tools:ignore="MissingConstraints">
+
+        <EditText
+            android:id="@+id/password_input"
+            android:layout_width="347dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:hint="Enter a password"
+            android:inputType="text"
+            android:paddingStart="10dp"
+            android:paddingEnd="20dp"
+            android:textColor="@color/textAndLogo"
+            android:textColorHint="@color/textAndLogo"
+            android:textSize="18dp">
+
+        </EditText>
+
+    </androidx.cardview.widget.CardView>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="17dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="90dp"
+        android:text="Username must contain at least 8 characters"
+        android:textColor="@color/textAndLogo"
+        android:textSize="14sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/cardView3"
+        tools:ignore="MissingConstraints" />
+
+    <TextView
+        android:id="@+id/textView3"
+        android:layout_width="wrap_content"
+        android:layout_height="17dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="90dp"
+        android:text="Password must contain at least 10 characters .\n (numbers and letters)"
+        android:textColor="@color/textAndLogo"
+        android:textSize="14sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/cardView4"
+        tools:ignore="MissingConstraints">
+
+    </TextView>
+
+    <CheckBox
+        android:id="@+id/remember_me_checkbox"
+        android:layout_width="wrap_content"
+        android:layout_height="24dp"
+        android:layout_marginTop="50dp"
+        android:layout_marginEnd="250dp"
+        android:text="Remember me"
+        android:textColor="@color/textAndLogo"
+        android:textSize="15dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/cardView4">
+
+    </CheckBox>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
