@@ -48,15 +48,16 @@
 
     <ImageButton
         android:id="@+id/back_button"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
         android:layout_marginStart="20dp"
         android:layout_marginTop="20dp"
         android:backgroundTint="@color/buttons"
         android:src="@drawable/back_button"
         android:contentDescription="@string/go_back"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="ImageContrastCheck">
 
     </ImageButton>
 
@@ -80,7 +81,7 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_view_folder"
         android:layout_width="0dp"
-        android:layout_height="30dp"
+        android:layout_height="50dp"
         android:layout_marginTop="10dp"
         android:clipToPadding="false"
         android:paddingStart="16dp"
@@ -112,7 +113,8 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:contentDescription="@string/clock_icon"
-                android:src="@drawable/clock_icon">
+                android:src="@drawable/clock_icon"
+                tools:ignore="ImageContrastCheck">
 
             </ImageView>
 
@@ -134,7 +136,7 @@
             android:id="@+id/all_day_switch"
             android:layout_width="60dp"
             android:layout_height="24dp"
-            tools:ignore="UseSwitchCompatOrMaterialXml">
+            tools:ignore="UseSwitchCompatOrMaterialXml,TouchTargetSizeCheck">
 
         </Switch>
 
