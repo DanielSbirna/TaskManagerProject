@@ -45,4 +45,8 @@
     <string name="repeat">Repeat</string>
     <string name="save">Save</string>
     <string name="folders">Folders</string>
+    <string name="number">nr</string>
+    <string name="folder_name">Folder name</string>
+    <string name="choose_color">Choose color</string>
+    <string name="cancel">Cancel</string>
 </resources>
