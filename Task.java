@@ -1,12 +1,24 @@
 public class Task {
+    private long id;
     private String title;
     private String description;
     private String dueDate;
-   private String dueTime;
+    private String dueTime;
     private boolean isDone;
 
-    //Constructor with args
+    // Constructor with args with ID
+    public Task (long id, String title, String description, String dueDate, String dueTime, boolean isDone){
+        this.id = id;
+        this.title = title;
+        this.description = description;
+        this.dueDate = dueDate;
+        this.dueTime = dueTime;
+        this.isDone = isDone;
+    }
+
+    // Constructor with args
     public Task (String title, String description, String dueDate, String dueTime, boolean isDone){
+        this.id=-1;
         this.title = title;
         this.description = description;
         this.dueDate = dueDate;
@@ -16,6 +28,7 @@ public class Task {
 
     //Constructor with no args
     public Task (){
+        id = -1;
         title = "Meal Prep";
         description = "Make your next meal";
         dueDate = "02.07.2025";
@@ -25,6 +38,7 @@ public class Task {
 
     //Copy connstrctor
     public Task (Task other){
+        this.id = other.id;
         this.title = other.title;
         this.description = other.description;
         this.dueDate = other.dueDate;
@@ -33,27 +47,35 @@ public class Task {
     }
 
     //Get
-    public String getTitle(String title){
+    public long getId() {
+        return id;
+    }
+    
+    public String getTitle(){
         return title;
     }
 
-    public String getDescription (String description){
+    public String getDescription (){
         return description;
     }
 
-    public String getDueDate (String dueDate){
+    public String getDueDate (){
         return dueDate;
     }
 
-    public String getDueTime (String dueTime){
+    public String getDueTime (){
         return dueTime;
     }
 
-    public boolean getIsDone (boolean isDone){
+    public boolean getIsDone (){
         return isDone;
     }
 
     //Set
+    public void setId(long id) {
+        this.id = id;
+    }
+    
     public void setTitle (String title){
         this.title = title;
     }
@@ -73,11 +95,4 @@ public class Task {
     public void setIsDone (String isDone){
         this.isDone = isDone;
     }
-
-    @Override
-    public String toString(){
-        return "The task " + title + " that requires " + description + " and has to be done by " + dueDate + " at " + dueTime + " is currently marked as done " + isDone;
-    }
-
-
 }
