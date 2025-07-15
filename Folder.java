@@ -1,48 +1,58 @@
 public class Folder {
+    private long id;
     private String folderName;
-    private int color;
     private static int components; // how many tasks has in it
 
-    //Constructor with args + increments components to 1
-    public Folder (String folderName, int color, int components){
+    // Constructor with args including ID
+    public Folder (long id, String folderName, int components){
+        this.id = id;
         this.folderName = folderName;
-        this.color = color;
-        components++;
+        this.components = components;
+    }
+
+    // Constructor with args (for new folders before DB assignment)
+    public Folder (String folderName, int components){
+        this.folderName = folderName;
+        this.components = components;
     }
 
     //Constructor with no args
     public Folder (){
-        folderName = "Work";
-        color = 2;
+        id = -1; // Default invalid ID
+        folderName = "Unnamed";
+        components = 0;
     }
 
     //Copy constructor
     public Folder(Folder other){
+        this.id = other.id;
         this.folderName = other.folderName;
-        this.color = other.color;
+        this.components = other.components;
     }
 
     //Get
-    public String getFolderName(String folderName){
+    public long getId() {
+        return id;
+    }
+    
+    public String getFolderName(){
         return folderName;
     }
 
-    public int getColor(int color){
-        return color;
-    }
-
-    public int getComponents(int components){
+    public int getComponents(){
         return components;
     }
 
     //Set
+     public void setId(long id) {
+        this.id = id;
+    }
+    
     public void setFolderName(String folderName){
         this.folderName = folderName;
     }
 
-    public void setColor(int color){
-        this.color = color;
+    public void setComponents(int components) {
+        this.components = components;
     }
-
-
 }
