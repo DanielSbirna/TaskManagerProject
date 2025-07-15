@@ -27,6 +27,13 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         this.taskList = taskList;
     }
 
+    // Method to update in the data adapter
+    public void setTasks(List<Task> newTasks) {
+        this.taskList.clear();
+        this.taskList.addAll(newTasks);
+        notifyDataSetChanged();
+    }
+
     // Allows MainActivity to listen for events.
     public interface OnItemClickListener {
         void onTaskClick(int position); // For general click on the entire task item
