@@ -4,16 +4,15 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 
 import android.widget.EditText;
 import android.widget.CheckBox;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.cardview.widget.CardView;
 
-import com.example.taskmanager.MainActivity;
+import com.google.android.material.button.MaterialButton;
+
 import com.example.taskmanager.R;
 import com.example.taskmanager.data.TaskContract;
 import com.example.taskmanager.data.TaskDbHelper;
@@ -38,8 +37,8 @@ public class LoginScreen extends AppCompatActivity {
 
         usernameInput = findViewById(R.id.username_input);
         passwordInput = findViewById(R.id.password_input);
-        CardView logInButton = findViewById(R.id.log_in_button);
-        CardView signUpButton = findViewById(R.id.sign_up_button);
+        MaterialButton logInButton = findViewById(R.id.log_in_button);
+        MaterialButton signUpButton = findViewById(R.id.sign_up_button);
         rememberMeCheckbox = findViewById(R.id.remember_me_checkbox);
 
         // 'Remember Me' state and username pre-fill
@@ -49,7 +48,10 @@ public class LoginScreen extends AppCompatActivity {
 
         // pre-fill username if 'Remember Me' checked
         if (saveLogin) {
-            usernameInput.setText(loginPreferences.getString("username", ""));
+            String savedUsername = loginPreferences.getString("username", "");
+            usernameInput.setText(savedUsername);
+            String savedPassword = loginPreferences.getString("password", "");
+            passwordInput.setText(savedPassword);
             rememberMeCheckbox.setChecked(true);
         }
 
@@ -72,15 +74,16 @@ public class LoginScreen extends AppCompatActivity {
                 if (rememberMeCheckbox.isChecked()) {
                     loginPrefsEditor.putBoolean("saveLogin", true); // save the checkbox state
                     loginPrefsEditor.putString("username", username); // save the username for pre-fill
-                    loginPrefsEditor.apply(); // commit
+                    loginPrefsEditor.putString("password", password); // save the password for pre-fill
+                    loginPrefsEditor.apply();
                 } else {
-                    loginPrefsEditor.clear(); //clear
-                    loginPrefsEditor.apply(); //commit
+                    loginPrefsEditor.clear();
+                    loginPrefsEditor.apply();
                 }
 
-                Intent intent = new Intent(LoginScreen.this, MainActivity.class);
+                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
                 startActivity(intent);
-                finish(); // closing the Login screen so 'back' doesn't go back to it
+                finish(); // closing the Login so 'back' doesn't go back to it
             } else {
                 Toast.makeText(this, "Invalid Username or Password", Toast.LENGTH_SHORT).show();
             }
@@ -90,36 +93,20 @@ public class LoginScreen extends AppCompatActivity {
         // OnClickListener for the SIGN UP
         signUpButton.setOnClickListener(v -> {
             // Intent to go from LoginScreen to SignUpScreen
-            Intent intent = new Intent(LoginScreen.this, SignUpScreen.class);
-            startActivity(intent); // Start the SignUpScreen activity
+            Intent intent = new Intent(LoginActivity.this, SignUpActivity.class);
+            startActivity(intent); // Start the SignUpActivity
         });
     }
     private boolean authenticateUser(String username, String plainPassword){
-        SQLiteDatabase db = dbHelper.getReadableDatabase();
-        Cursor cursor = null; // cursor is outside try-catch and blocks access
+        Cursor cursor = null;
         boolean isAuthenticated = false;
 
-        // retrieving the salt and hashed password
-        String [] projection = {
-                TaskContract.UserEntry.COLUMN_NAME_PASSWORD,
-                TaskContract.UserEntry.COLUMN_NAME_SALT
-        };
-
-        // selecting the row where username matches
-        String selection = TaskContract.UserEntry.COLUMN_NAME_USERNAME + " = ?";
-        String[] selectionArgs = {username};
-
         try {
-            cursor = db.query(
-                    TaskContract.UserEntry.TABLE_NAME,
-                    projection,
-                    selection,
-                    selectionArgs,
-                    null, null, null // no group no filter no sort order
-            );
+            // Use dbHelper to get user credentials
+            cursor = dbHelper.getUserCredentials(username);
 
             // if username matches, attempt to verify the password
-            if(cursor.moveToFirst()){
+            if(cursor != null && cursor.moveToFirst()){
                 String storedHashedPassword = cursor.getString(cursor.getColumnIndexOrThrow(TaskContract.UserEntry.COLUMN_NAME_PASSWORD));
                 String storedSaltString = cursor.getString(cursor.getColumnIndexOrThrow(TaskContract.UserEntry.COLUMN_NAME_SALT));
 
@@ -132,7 +119,7 @@ public class LoginScreen extends AppCompatActivity {
                 }
             }
         } catch (Exception e) {
-            android.util.Log.e(TAG, "Error during database operation for login: " + e.getMessage(), e); // Log any exceptions during database operation for debugging
+            Log.e(TAG, "Error during database operation for login: " + e.getMessage(), e); // Log any exceptions during database operation for debugging
         } finally {
             if (cursor != null) {
                 cursor.close(); // prevent resource leaks
