@@ -1,27 +1,20 @@
 package com.example.taskmanager.ui.theme;
 
-import android.content.ContentValues;
 import android.content.Intent;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 
 import android.widget.EditText;
 import android.widget.Toast; // showing messages
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.cardview.widget.CardView; // button CardView
+import androidx.cardview.widget.CardView;
 
-import com.example.taskmanager.R; // App res file
+import com.example.taskmanager.R;
 
-import com.example.taskmanager.data.TaskContract;
 import com.example.taskmanager.data.TaskDbHelper;
 import com.example.taskmanager.data.PasswordHasher;
 
-import android.database.Cursor;
-
-
-
-public class SignUpScreen extends AppCompatActivity {
+public class SignUpActivity extends AppCompatActivity {
 
     private EditText nameInput;
     private EditText usernameInput;
@@ -50,31 +43,31 @@ public class SignUpScreen extends AppCompatActivity {
             String username = usernameInput.getText().toString().trim();
             String password = passwordInput.getText().toString().trim();
 
-            // --- Validations ---
+            // Validations
             if (fullName.isEmpty()) { // Add validation for nameInput
                 nameInput.setError("Name cannot be empty");
-                Toast.makeText(SignUpScreen.this, "Name cannot be empty", Toast.LENGTH_SHORT).show();
+                Toast.makeText(SignUpActivity.this, "Name cannot be empty", Toast.LENGTH_SHORT).show();
                 return; // Stop execution
             }
             if (username.isEmpty()) { // Check for empty username specifically
                 usernameInput.setError("Username cannot be empty");
-                Toast.makeText(SignUpScreen.this, "Please enter a username", Toast.LENGTH_SHORT).show();
+                Toast.makeText(SignUpActivity.this, "Please enter a username", Toast.LENGTH_SHORT).show();
                 return; // Stop execution
             }
             if (password.isEmpty()) { // Check for empty password specifically
                 passwordInput.setError("Password cannot be empty");
-                Toast.makeText(SignUpScreen.this, "Please enter a password", Toast.LENGTH_SHORT).show();
+                Toast.makeText(SignUpActivity.this, "Please enter a password", Toast.LENGTH_SHORT).show();
                 return; // Stop execution
             }
 
             if (username.length() < 8) {
                 usernameInput.setError("Username must be at least 8 characters long");
-                Toast.makeText(SignUpScreen.this, "Username must be at least 8 characters long", Toast.LENGTH_SHORT).show();
+                Toast.makeText(SignUpActivity.this, "Username must be at least 8 characters long", Toast.LENGTH_SHORT).show();
                 return; // Stop execution
             }
             if (password.length() < 10 || !password.matches(".*[0-9].*") || !password.matches(".*[a-zA-Z].*")) {
                 passwordInput.setError("Password must be at least 10 characters and contain numbers and letters");
-                Toast.makeText(SignUpScreen.this, "Password must be at least 10 characters and contain numbers and letters", Toast.LENGTH_SHORT).show();
+                Toast.makeText(SignUpActivity.this, "Password must be at least 10 characters and contain numbers and letters", Toast.LENGTH_SHORT).show();
                 return; // Stop execution
             }
 
@@ -84,31 +77,14 @@ public class SignUpScreen extends AppCompatActivity {
     }
 
     private void registerUser(String fullName, String username, String password){
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-
-        //Check if username already exists in the db
-        String[] projection = {TaskContract.UserEntry._ID}; //SELECT ID
-        String selection = TaskContract.UserEntry.COLUMN_NAME_USERNAME + " = ?"; //WHERE username
-        String[] selectionArgs = {username}; //username value
-
-        Cursor cursor = db.query(
-                TaskContract.UserEntry.TABLE_NAME,
-                projection,
-                selection,
-                selectionArgs,
-                null, null, null
-        );
-
-        //if cursor has rows than username exists
-        if(cursor.getCount()>0){
+        // Check if username already exists using TaskDbHelper
+        if (dbHelper.doesUsernameExist(username)) {
             Toast.makeText(this, "Username already exists. Please choose another", Toast.LENGTH_SHORT).show();
-            cursor.close();
-            db.close();
             return;
         }
 
         //salt and hashing
-         byte[] salt= PasswordHasher.generateSalt();
+        byte[] salt= PasswordHasher.generateSalt();
         String saltString = PasswordHasher.saltToString(salt); //byte - string for storage
         String hashedPassword = PasswordHasher.hashPassword(password, salt);
 
@@ -117,26 +93,20 @@ public class SignUpScreen extends AppCompatActivity {
             return;
         }
 
-        //new user insert
-        ContentValues values = new ContentValues();
-        values.put(TaskContract.UserEntry.COLUMN_NAME_FULL_NAME, fullName);
-        values.put(TaskContract.UserEntry.COLUMN_NAME_USERNAME, username);
-        values.put(TaskContract.UserEntry.COLUMN_NAME_PASSWORD, hashedPassword);
-        values.put(TaskContract.UserEntry.COLUMN_NAME_SALT, saltString);
-
-        long newRowId = db.insert(TaskContract.UserEntry.TABLE_NAME, null, values);
+        // Insert new user using TaskDbHelper
+        long newRowId = dbHelper.insertUser(fullName, username, hashedPassword, saltString);
 
         if(newRowId != OPERATION_FAIL){
-            Toast.makeText(SignUpScreen.this, "Sign up successful!", Toast.LENGTH_LONG).show();
+            Toast.makeText(SignUpActivity.this, "Sign up successful!", Toast.LENGTH_LONG).show();
             //Go to LoginScreen
-            Intent intent = new Intent(SignUpScreen.this, LoginScreen.class);
+            Intent intent = new Intent(SignUpActivity.this, LoginActivity.class);
             startActivity(intent);
             finish();
         }else{
-            Toast.makeText(SignUpScreen.this, "Sign Up Failed. Please try again.", Toast.LENGTH_LONG).show();
+            Toast.makeText(SignUpActivity.this, "Sign Up Failed. Please try again.", Toast.LENGTH_LONG).show();
         }
-        db.close();
     }
+    
     @Override
     protected void onDestroy(){
         if(dbHelper != null){
