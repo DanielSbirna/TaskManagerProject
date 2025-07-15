@@ -22,4 +22,10 @@ public final class TaskContract {
         public static final String COLUMN_NAME_PASSWORD = "password"; // Store the hashed password
         public static final String COLUMN_NAME_SALT = "salt"; // salt password
     }
+
+     public static class FolderEntry implements BaseColumns{
+        public static final String TABLE_NAME ="folder";
+        public static final String COLUMN_NAME_FOLDER_NAME = "folder_name";
+        public static final String COLUMN_NAME_COMPONENTS_COUNT ="components_count";
+    }
 }
