@@ -15,20 +15,8 @@ import java.util.List;
 
 public class TaskDbHelper extends SQLiteOpenHelper {
 
-    public static final int DATABASE_VERSION = 2;
+    public static final int DATABASE_VERSION = 5;
     public static final String DATABASE_NAME = "TaskManager.db";
-
-    private static final String SQL_CREATE_TASKS_ENTRIES =
-            "CREATE TABLE " + TaskContract.TaskEntry.TABLE_NAME + " (" +
-                    TaskContract.TaskEntry._ID + " INTEGER PRIMARY KEY," +
-                    TaskContract.TaskEntry.COLUMN_NAME_TITLE + " TEXT NOT NULL," +
-                    TaskContract.TaskEntry.COLUMN_NAME_DESCRIPTION + " TEXT," +
-                    TaskContract.TaskEntry.COLUMN_NAME_DUE_DATE + " TEXT," +
-                    TaskContract.TaskEntry.COLUMN_NAME_DUE_TIME + " TEXT," +
-                    TaskContract.TaskEntry.COLUMN_NAME_COMPLETED + " INTEGER DEFAULT 0,)"
-                    TaskContract.TaskEntry.COLUMN_NAME_FOLDER_ID + " INTEGER," +
-                    "FOREIGN KEY (" + TaskContract.TaskEntry.COLUMN_NAME_FOLDER_ID + ") REFERENCES " +
-                    TaskContract.FolderEntry.TABLE_NAME + "(" + TaskContract.FolderEntry._ID + ") ON DELETE CASCADE" + ")";
 
     private  static final String SQL_CREATE_USERS_ENTRIES =
             "CREATE TABLE " + TaskContract.UserEntry.TABLE_NAME + " (" +
@@ -40,9 +28,27 @@ public class TaskDbHelper extends SQLiteOpenHelper {
 
     private static final String SQL_CREATE_FOLDERS_ENTRIES =
             "CREATE TABLE " + TaskContract.FolderEntry.TABLE_NAME + " (" +
-                    TaskContract.FolderEntry._ID + " INTEGER PRIMARY KEY ," +
-                    TaskContract.FolderEntry.COLUMN_NAME_FOLDER_NAME + " TEXT UNIQUE NOT NULL ," +
-                    TaskContract.FolderEntry.COLUMN_NAME_COMPONENTS_COUNT + " INTEGER)";
+                    TaskContract.FolderEntry._ID + " INTEGER PRIMARY KEY," +
+                    TaskContract.FolderEntry.COLUMN_NAME_FOLDER_NAME + " TEXT NOT NULL," +
+                    TaskContract.FolderEntry.COLUMN_NAME_USER_ID + " INTEGER NOT NULL," +
+                    TaskContract.FolderEntry.COLUMN_NAME_COMPONENTS_COUNT + " INTEGER," +
+                    "FOREIGN KEY (" + TaskContract.FolderEntry.COLUMN_NAME_USER_ID + ") REFERENCES " +
+                    TaskContract.UserEntry.TABLE_NAME + "(" + TaskContract.UserEntry._ID + ") ON DELETE CASCADE" + ")";
+
+    private static final String SQL_CREATE_TASKS_ENTRIES =
+            "CREATE TABLE " + TaskContract.TaskEntry.TABLE_NAME + " (" +
+                    TaskContract.TaskEntry._ID + " INTEGER PRIMARY KEY," +
+                    TaskContract.TaskEntry.COLUMN_NAME_TITLE + " TEXT NOT NULL," +
+                    TaskContract.TaskEntry.COLUMN_NAME_DESCRIPTION + " TEXT," +
+                    TaskContract.TaskEntry.COLUMN_NAME_DUE_DATE + " TEXT," +
+                    TaskContract.TaskEntry.COLUMN_NAME_DUE_TIME + " TEXT," +
+                    TaskContract.TaskEntry.COLUMN_NAME_COMPLETED + " INTEGER DEFAULT 0,)" +
+                    TaskContract.TaskEntry.COLUMN_NAME_FOLDER_ID + " INTEGER," + 
+                    TaskContract.TaskEntry.COLUMN_NAME_USER_ID + " INTEGER NOT NULL," +
+                    "FOREIGN KEY (" + TaskContract.TaskEntry.COLUMN_NAME_FOLDER_ID + ") REFERENCES " +
+                    TaskContract.FolderEntry.TABLE_NAME + "(" + TaskContract.FolderEntry._ID + ") ON DELETE SET NULL," +
+                    "FOREIGN KEY (" + TaskContract.TaskEntry.COLUMN_NAME_USER_ID + ") REFERENCES " +
+                    TaskContract.UserEntry.TABLE_NAME + "(" + TaskContract.UserEntry._ID + ") ON DELETE CASCADE" + ")";
 
     // Delete table statements
     private static final String SQL_DELETE_TASKS_ENTRIES =
@@ -60,19 +66,20 @@ public class TaskDbHelper extends SQLiteOpenHelper {
 
     }
 
-    // Create tables when database is created for the first time
+    // Create tables when database is created for the first time in least to most dependencies order
     @Override
     public void onCreate(SQLiteDatabase db) {
-        db.execSQL(SQL_CREATE_TASKS_ENTRIES);
-        db.execSQL(SQL_CREATE_USERS_ENTRIES);
-        db.execSQL(SQL_CREATE_FOLDERS_ENTRIES);
+        db.execSQL(SQL_CREATE_USERS_ENTRIES); // Create users first
+        db.execSQL(SQL_CREATE_FOLDERS_ENTRIES); // Create folders 2nd
+        db.execSQL(SQL_CREATE_TASKS_ENTRIES); // Create folder 3rd
     }
 
+    // Drops tables in order from most dependencies to least
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion){
-        db.execSQL(SQL_DELETE_TASKS_ENTRIES);
-        db.execSQL(SQL_DELETE_USERS_ENTRIES);
+         db.execSQL(SQL_DELETE_TASKS_ENTRIES);
         db.execSQL(SQL_DELETE_FOLDERS_ENTRIES);
+        db.execSQL(SQL_DELETE_USERS_ENTRIES);
         onCreate(db);
         Log.d("TaskDbHelper", "Database upgraded. Old Tables dropped, new tables created.");
     }
@@ -91,8 +98,7 @@ public class TaskDbHelper extends SQLiteOpenHelper {
         values.put(TaskContract.UserEntry.COLUMN_NAME_PASSWORD, hashedPassword);
         values.put(TaskContract.UserEntry.COLUMN_NAME_SALT, salt);
 
-        long newRowId = db.insert(TaskContract.UserEntry.TABLE_NAME, null, values);
-        db.close();
+        int newRowId = (int)(db.insert(TaskContract.UserEntry.TABLE_NAME, null, values));
         Log.d("TaskDbHelper", "User inserted with ID: " + newRowId);
         return newRowId;
     }
@@ -108,14 +114,13 @@ public class TaskDbHelper extends SQLiteOpenHelper {
         String selection = TaskContract.UserEntry.COLUMN_NAME_USERNAME + " = ?";
         String[] selectionArgs = {username};
 
-        Cursor cursor = db.query(
+        return db.query(
                 TaskContract.UserEntry.TABLE_NAME,
                 projection,
                 selection,
                 selectionArgs,
                 null, null, null
         );
-        return cursor;
     }
 
     // Check if a username already exists in the database
@@ -140,25 +145,25 @@ public class TaskDbHelper extends SQLiteOpenHelper {
     }
 
     // Inserts a new folder into the database
-    public long insertFolder(String folderName) {
+    public long insertFolder(String folderName, int userId) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(TaskContract.FolderEntry.COLUMN_NAME_FOLDER_NAME, folderName);
+        values.put(TaskContract.FolderEntry.COLUMN_NAME_USER_ID, userId); // Link to user
         values.put(TaskContract.FolderEntry.COLUMN_NAME_COMPONENTS_COUNT, 0); // New folder starts with 0 tasks
 
-        long newRowId = -1;
+        int newRowId = -1;
         try {
-            newRowId = db.insertOrThrow(TaskContract.FolderEntry.TABLE_NAME, null, values);
-            Log.d("TaskDbHelper", "Folder '" + folderName + "' inserted with ID: " + newRowId);
+            newRowId = (int) db.insertOrThrow(TaskContract.FolderEntry.TABLE_NAME, null, values);
+            Log.d("TaskDbHelper", "Folder '" + folderName + "' inserted with ID: " + newRowId + " for user ID: " + userId);
         } catch (android.database.SQLException e) {
             Log.e("TaskDbHelper", "Error inserting folder: " + e.getMessage());
-        } finally {
-            db.close();
         }
         return newRowId;
     }
 
-    public List<Folder> getAllFolders() {
+    // Retrieves folders for a specific user (no parent folder filter needed)
+    public List<Folder> getAllFolders(int userId) {
         List<Folder> folderList = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = null;
@@ -167,48 +172,60 @@ public class TaskDbHelper extends SQLiteOpenHelper {
             String[] projection = {
                     TaskContract.FolderEntry._ID,
                     TaskContract.FolderEntry.COLUMN_NAME_FOLDER_NAME,
-                    TaskContract.FolderEntry.COLUMN_NAME_COMPONENTS_COUNT
+                    TaskContract.FolderEntry.COLUMN_NAME_USER_ID, // Include user_id
+                    TaskContract.FolderEntry.COLUMN_NAME_COMPONENTS_COUNT // Include components count
             };
+
+            String selection = TaskContract.FolderEntry.COLUMN_NAME_USER_ID + " = ?";
+            String[] selectionArgs = new String[]{String.valueOf(userId)};
 
             cursor = db.query(
                     TaskContract.FolderEntry.TABLE_NAME,
                     projection,
-                    null, null, null, null,
+                    selection,
+                    selectionArgs,
+                    null, null,
                     TaskContract.FolderEntry.COLUMN_NAME_FOLDER_NAME + " ASC" // Order by name
             );
 
-            if (cursor != null && cursor.moveToFirst()) {
+            if (cursor.moveToFirst()) {
                 int idIndex = cursor.getColumnIndexOrThrow(TaskContract.FolderEntry._ID);
                 int nameIndex = cursor.getColumnIndexOrThrow(TaskContract.FolderEntry.COLUMN_NAME_FOLDER_NAME);
-                int componentsIndex = cursor.getColumnIndexOrThrow(TaskContract.FolderEntry.COLUMN_NAME_COMPONENTS_COUNT);
-
+                int userIdColIndex = cursor.getColumnIndexOrThrow(TaskContract.FolderEntry.COLUMN_NAME_USER_ID);
+                int componentsCountIndex = cursor.getColumnIndexOrThrow(TaskContract.FolderEntry.COLUMN_NAME_COMPONENTS_COUNT);
+                
                 do {
-                    long id = cursor.getLong(idIndex);
+                    // Changed to getInt() as per your preference for 'id'
+                    int id = cursor.getInt(idIndex);
                     String folderName = cursor.getString(nameIndex);
-                    int components = cursor.getInt(componentsIndex);
-                    folderList.add(new Folder(id, folderName, components));
+                    // Use getInt() for userId
+                    int folderUserId = cursor.getInt(userIdColIndex);
+                    int componentsCount = cursor.getInt(componentsCountIndex);
+
+                    // Now calling Folder constructor with int id and int userId
+                    folderList.add(new Folder(id, folderName, folderUserId, componentsCount));
                 } while (cursor.moveToNext());
             }
         } catch (Exception e) {
-            Log.e("TaskDbHelper", "Error getting all folders: " + e.getMessage());
+            Log.e("TaskDbHelper", "Error getting folders for user " + userId + ": " + e.getMessage(), e);
         } finally {
             if (cursor != null) {
                 cursor.close();
             }
-            db.close();
+            // db.close(); // Don't close here, manage connection outside
         }
-        Log.d("TaskDbHelper", "Retrieved " + folderList.size() + " folders.");
+        Log.d("TaskDbHelper", "Retrieved " + folderList.size() + " folders for user " + userId + ".");
         return folderList;
     }
-
+    
     // Update task for a specific folder
-    public int updateFolderTaskCount(long folderId, int newCount) {
+    public int updateFolderTaskCount(long folderId, int newCount, int userId) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(TaskContract.FolderEntry.COLUMN_NAME_COMPONENTS_COUNT, newCount);
 
-        String selection = TaskContract.FolderEntry._ID + " = ?";
-        String[] selectionArgs = {String.valueOf(folderId)};
+        String selection = TaskContract.FolderEntry._ID + " = ? AND " + TaskContract.FolderEntry.COLUMN_NAME_USER_ID + " = ?";
+        String[] selectionArgs = {String.valueOf(folderId), String.valueOf(userId)};
 
         int count = db.update(
                 TaskContract.FolderEntry.TABLE_NAME,
@@ -222,18 +239,17 @@ public class TaskDbHelper extends SQLiteOpenHelper {
     }
 
     // Deletes Folder from the db
-    public int deleteFolder(long folderId) {
+    public int deleteFolder(long folderId, int userId) {
         SQLiteDatabase db = this.getWritableDatabase();
-        String selection = TaskContract.FolderEntry._ID + " = ?";
-        String[] selectionArgs = {String.valueOf(folderId)};
+        String selection = TaskContract.FolderEntry._ID + " = ? AND " + TaskContract.FolderEntry.COLUMN_NAME_USER_ID + " = ?";
+        String[] selectionArgs = {String.valueOf(folderId), String.valueOf(userId)};
         int deletedRows = db.delete(TaskContract.FolderEntry.TABLE_NAME, selection, selectionArgs);
-        db.close();
         Log.d("TaskDbHelper", "Deleted folder with ID: " + folderId + ". Rows affected: " + deletedRows);
         return deletedRows;
     }
 
     // Insert new task into the database
-    public long insertTask(Task task, long folderId) {
+    public long insertTask(Task task, int userId, Long folderId) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(TaskContract.TaskEntry.COLUMN_NAME_TITLE, task.getTitle());
@@ -241,20 +257,20 @@ public class TaskDbHelper extends SQLiteOpenHelper {
         values.put(TaskContract.TaskEntry.COLUMN_NAME_DUE_DATE, task.getDueDate());
         values.put(TaskContract.TaskEntry.COLUMN_NAME_DUE_TIME, task.getDueTime());
         values.put(TaskContract.TaskEntry.COLUMN_NAME_COMPLETED, task.getIsDone() ? 1 : 0);
-        if (folderId != -1) {
+        values.put(TaskContract.TaskEntry.COLUMN_NAME_USER_ID, userId); // Link task to the current user
+        if (folderId != null) { // Check for null
             values.put(TaskContract.TaskEntry.COLUMN_NAME_FOLDER_ID, folderId);
         } else {
-            values.putNull(TaskContract.TaskEntry.COLUMN_NAME_FOLDER_ID);
+            values.putNull(TaskContract.TaskEntry.COLUMN_NAME_FOLDER_ID); // Task is not in a folder
         }
 
-        long newRowId = db.insert(TaskContract.TaskEntry.TABLE_NAME, null, values);
-        db.close();
-        Log.d("TaskDbHelper", "Task '" + task.getTitle() + "' inserted with ID: " + newRowId + " into folder ID: " + folderId);
+        int newRowId = (int) db.insert(TaskContract.TaskEntry.TABLE_NAME, null, values);
+        Log.d("TaskDbHelper", "Task '" + task.getTitle() + "' inserted with ID: " + newRowId + " for user ID: " + userId + " into folder ID: " + folderId);
         return newRowId;
     }
 
     // Retrieves all tasks from the database
-    public List<Task> getAllTasks() {
+    public List<Task> getTasksForUserAndFolder(int userId, Long folderId, String orderBy) {
         List<Task> taskList = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = null;
@@ -267,58 +283,76 @@ public class TaskDbHelper extends SQLiteOpenHelper {
                     TaskContract.TaskEntry.COLUMN_NAME_DUE_DATE,
                     TaskContract.TaskEntry.COLUMN_NAME_DUE_TIME,
                     TaskContract.TaskEntry.COLUMN_NAME_COMPLETED,
-                    TaskContract.TaskEntry.COLUMN_NAME_FOLDER_ID
+                    TaskContract.TaskEntry.COLUMN_NAME_FOLDER_ID,
+                    TaskContract.TaskEntry.COLUMN_NAME_USER_ID
             };
+
+            String selection;
+            String[] selectionArgs;
+
+            if (folderId == null || folderId == 0L) { // Added 0L check for consistency if a default "no folder" ID is used
+                // Get tasks not assigned to any folder for this user (root tasks)
+                selection = TaskContract.TaskEntry.COLUMN_NAME_USER_ID + " = ? AND " +
+                        TaskContract.TaskEntry.COLUMN_NAME_FOLDER_ID + " IS NULL";
+                selectionArgs = new String[]{String.valueOf(userId)};
+            } else {
+                // Get tasks within a specific folder for this user
+                selection = TaskContract.TaskEntry.COLUMN_NAME_USER_ID + " = ? AND " +
+                        TaskContract.TaskEntry.COLUMN_NAME_FOLDER_ID + " = ?";
+                selectionArgs = new String[]{String.valueOf(userId), String.valueOf(folderId)};
+            }
 
             cursor = db.query(
                     TaskContract.TaskEntry.TABLE_NAME,
                     projection,
-                    null, null, null, null,
-                    null // No specific order for now, can be added later
+                    selection,
+                    selectionArgs,
+                    null, null,
+                    orderBy // Order by clause passed in
             );
 
-            if (cursor != null && cursor.moveToFirst()) {
+            if (cursor.moveToFirst()) {
                 int idIndex = cursor.getColumnIndexOrThrow(TaskContract.TaskEntry._ID);
                 int titleIndex = cursor.getColumnIndexOrThrow(TaskContract.TaskEntry.COLUMN_NAME_TITLE);
                 int descIndex = cursor.getColumnIndexOrThrow(TaskContract.TaskEntry.COLUMN_NAME_DESCRIPTION);
                 int dueDateIndex = cursor.getColumnIndexOrThrow(TaskContract.TaskEntry.COLUMN_NAME_DUE_DATE);
                 int dueTimeIndex = cursor.getColumnIndexOrThrow(TaskContract.TaskEntry.COLUMN_NAME_DUE_TIME);
                 int completedIndex = cursor.getColumnIndexOrThrow(TaskContract.TaskEntry.COLUMN_NAME_COMPLETED);
-                int folderIdIndex = cursor.getColumnIndexOrThrow(TaskContract.TaskEntry.COLUMN_NAME_FOLDER_ID);
+                int folderIdColIndex = cursor.getColumnIndexOrThrow(TaskContract.TaskEntry.COLUMN_NAME_FOLDER_ID);
+                int userIdColIndex = cursor.getColumnIndexOrThrow(TaskContract.TaskEntry.COLUMN_NAME_USER_ID);
 
                 do {
-                    long id = cursor.getLong(idIndex);
+                    int id = cursor.getInt(idIndex);
                     String title = cursor.getString(titleIndex);
                     String description = cursor.getString(descIndex);
                     String dueDate = cursor.getString(dueDateIndex);
                     String dueTime = cursor.getString(dueTimeIndex);
-                    boolean isCompleted = cursor.getInt(completedIndex) == 1;
-                    long folderId = cursor.getLong(folderIdIndex); // Will be 0 if NULL in DB
+                    boolean isDone = cursor.getInt(completedIndex) == 1;
+                    Long taskFolderId = cursor.isNull(folderIdColIndex) ? null : cursor.getLong(folderIdColIndex);
+                    int taskUserId = cursor.getInt(userIdColIndex);
 
-                    Task task = new Task(id, title, description, dueDate, dueTime, isCompleted);
-                    taskList.add(task);
+                    taskList.add(new Task(id, title, description, dueDate, dueTime, isDone, taskUserId, taskFolderId));
                 } while (cursor.moveToNext());
             }
         } catch (Exception e) {
-            Log.e("TaskDbHelper", "Error getting all tasks: " + e.getMessage());
+            Log.e("TaskDbHelper", "Error getting tasks for user " + userId + " in folder " + folderId + ": " + e.getMessage(), e);
         } finally {
             if (cursor != null) {
                 cursor.close();
             }
-            db.close();
         }
-        Log.d("TaskDbHelper", "Retrieved " + taskList.size() + " tasks.");
+        Log.d("TaskDbHelper", "Retrieved " + taskList.size() + " tasks for user " + userId + " in folder " + folderId + ".");
         return taskList;
     }
-
+    
     // Updates the completion status of a task
-    public int updateTaskCompletionStatus(long taskId, boolean isCompleted) {
+    public int updateTaskCompletionStatus(long taskId,, boolean isDone, int userId) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(TaskContract.TaskEntry.COLUMN_NAME_COMPLETED, isCompleted ? 1 : 0);
 
-        String selection = TaskContract.TaskEntry._ID + " = ?";
-        String[] selectionArgs = {String.valueOf(taskId)};
+        String selection = TaskContract.TaskEntry._ID + " = ? AND " + TaskContract.TaskEntry.COLUMN_NAME_USER_ID + " = ?";
+        String[] selectionArgs = {String.valueOf(taskId), String.valueOf(userId)};
 
         int count = db.update(
                 TaskContract.TaskEntry.TABLE_NAME,
@@ -326,23 +360,47 @@ public class TaskDbHelper extends SQLiteOpenHelper {
                 selection,
                 selectionArgs
         );
-        db.close();
-        Log.d("TaskDbHelper", "Updated task ID " + taskId + " completion status to " + isCompleted + ". Rows affected: " + count);
+        Log.d("TaskDbHelper", "Updated task ID " + taskId + " completion status to " + isDone + " for user " + userId + ". Rows affected: " + count);
         return count;
     }
 
-    // Deletes a task from the database
-    public int deleteTask(long taskId) {
+    // Deletes a task from the database for a specific user
+    public int deleteTask(long taskId, int userId) {
         SQLiteDatabase db = this.getWritableDatabase();
-        String selection = TaskContract.TaskEntry._ID + " = ?";
-        String[] selectionArgs = {String.valueOf(taskId)};
+        String selection = TaskContract.TaskEntry._ID + " = ? AND " + TaskContract.TaskEntry.COLUMN_NAME_USER_ID + " = ?";
+        String[] selectionArgs = {String.valueOf(taskId), String.valueOf(userId)}};
         int deletedRows = db.delete(TaskContract.TaskEntry.TABLE_NAME, selection, selectionArgs);
         db.close();
-        Log.d("TaskDbHelper", "Deleted task with ID: " + taskId + ". Rows affected: " + deletedRows);
+       Log.d("TaskDbHelper", "Deleted task with ID: " + taskId + " for user " + userId + ". Rows affected: " + deletedRows);
         return deletedRows;
     }
 
-    // Retrieve a single folder object by its ID
+    // Update a task's details for a specific user
+    public int updateTask(Task task, int userId, Long folderId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(TaskContract.TaskEntry.COLUMN_NAME_TITLE, task.getTitle());
+        values.put(TaskContract.TaskEntry.COLUMN_NAME_DESCRIPTION, task.getDescription());
+        values.put(TaskContract.TaskEntry.COLUMN_NAME_DUE_DATE, task.getDueDate());
+        values.put(TaskContract.TaskEntry.COLUMN_NAME_DUE_TIME, task.getDueTime());
+        values.put(TaskContract.TaskEntry.COLUMN_NAME_COMPLETED, task.getIsDone() ? 1 : 0);
+        values.put(TaskContract.TaskEntry.COLUMN_NAME_USER_ID, userId); // Ensure userId is passed
+
+        if (folderId != null) {
+            values.put(TaskContract.TaskEntry.COLUMN_NAME_FOLDER_ID, folderId);
+        } else {
+            values.putNull(TaskContract.TaskEntry.COLUMN_NAME_FOLDER_ID);
+        }
+
+        String selection = TaskContract.TaskEntry._ID + " = ? AND " + TaskContract.TaskEntry.COLUMN_NAME_USER_ID + " = ?";
+        String[] selectionArgs = {String.valueOf(task.getId()), String.valueOf(userId)};
+
+        int count = db.update(TaskContract.TaskEntry.TABLE_NAME, values, selection, selectionArgs);
+        Log.d("TaskDbHelper", "Updated task ID " + task.getId() + " for user " + userId + ". Rows affected: " + count);
+        return count;
+    }
+
+    // Retrieve a single folder object by its ID for a specific user
     public Folder getFolderById(long folderId) {
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = null;
@@ -352,10 +410,11 @@ public class TaskDbHelper extends SQLiteOpenHelper {
             String[] projection = {
                     TaskContract.FolderEntry._ID,
                     TaskContract.FolderEntry.COLUMN_NAME_FOLDER_NAME,
+                    TaskContract.FolderEntry.COLUMN_NAME_USER_ID,
                     TaskContract.FolderEntry.COLUMN_NAME_COMPONENTS_COUNT
             };
-            String selection = TaskContract.FolderEntry._ID + " = ?";
-            String[] selectionArgs = {String.valueOf(folderId)};
+            String selection = TaskContract.FolderEntry._ID + " = ? AND " + TaskContract.FolderEntry.COLUMN_NAME_USER_ID + " = ?";
+            String[] selectionArgs = {String.valueOf(folderId), String.valueOf(userId)};
 
             cursor = db.query(
                     TaskContract.FolderEntry.TABLE_NAME,
@@ -365,29 +424,33 @@ public class TaskDbHelper extends SQLiteOpenHelper {
                     null, null, null
             );
 
-            if (cursor != null && cursor.moveToFirst()) {
+            if (cursor.moveToFirst()) {
                 int idIndex = cursor.getColumnIndexOrThrow(TaskContract.FolderEntry._ID);
                 int nameIndex = cursor.getColumnIndexOrThrow(TaskContract.FolderEntry.COLUMN_NAME_FOLDER_NAME);
+                int userIdColIndex = cursor.getColumnIndexOrThrow(TaskContract.FolderEntry.COLUMN_NAME_USER_ID);
                 int componentsIndex = cursor.getColumnIndexOrThrow(TaskContract.FolderEntry.COLUMN_NAME_COMPONENTS_COUNT);
 
-                long id = cursor.getLong(idIndex);
+
+                // Changed to getInt() as per your preference for 'id'
+                int id = cursor.getInt(idIndex);
                 String folderName = cursor.getString(nameIndex);
+                // Use getInt() for userId
+                int folderUserId = cursor.getInt(userIdColIndex);
                 int components = cursor.getInt(componentsIndex);
-                folder = new Folder(id, folderName, components);
-                Log.d("TaskDbHelper", "Retrieved folder by ID: " + folderId + ", Name: " + folderName + ", Components: " + components);
+
+                // Now calling Folder constructor with int id and int userId
+                folder = new Folder(id, folderName, folderUserId, components);
+                Log.d("TaskDbHelper", "Retrieved folder by ID: " + folderId + ", Name: " + folderName + ", User: " + folderUserId);
             } else {
-                Log.w("TaskDbHelper", "No folder found with ID: " + folderId);
+                Log.w("TaskDbHelper", "No folder found with ID: " + folderId + " for user: " + userId);
             }
         } catch (Exception e) {
-            Log.e("TaskDbHelper", "Error getting folder by ID " + folderId + ": " + e.getMessage(), e);
+            Log.e("TaskDbHelper", "Error getting folder by ID " + folderId + " for user " + userId + ": " + e.getMessage(), e);
         } finally {
             if (cursor != null) {
                 cursor.close();
             }
-            db.close(); // Close the database connection here
         }
         return folder;
     }
-
-}
 }
