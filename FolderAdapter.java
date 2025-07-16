@@ -54,8 +54,8 @@ public class FolderAdapter extends RecyclerView.Adapter<FolderAdapter.FolderView
         if (position < folderList.size()) {
             Folder currentFolder = folderList.get(position);
             holder.folderNameTextView.setText(currentFolder.getFolderName());
-            holder.folderComponentsTextView.setText(String.format("%d tasks", currentFolder.getComponents()));
-            Log.d(TAG, "onBindViewHolder: Binding folder '" + currentFolder.getFolderName() + "' (ID: " + currentFolder.getId() + ") at position " + position + ". Tasks: " + currentFolder.getComponents());
+            holder.folderComponentsTextView.setText(String.format("%d tasks", currentFolder.getComponentsCount()));
+            Log.d(TAG, "onBindViewHolder: Binding folder '" + currentFolder.getFolderName() + "' (ID: " + currentFolder.getId() + ") at position " + position + ". Tasks: " + currentFolder.getComponentsCount());
         } else {
             Log.e(TAG, "onBindViewHolder: Invalid position " + position + ". folderList size: " + folderList.size());
         }
