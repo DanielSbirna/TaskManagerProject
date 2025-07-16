@@ -10,7 +10,17 @@ public class Task {
 
     // Constructor with args with ID
     public Task (int id, String title, String description, String dueDate, String dueTime, boolean isDone, int userId, Long folderId){
-        this.id = id;
+        this.title = title;
+        this.description = description;
+        this.dueDate = dueDate;
+        this.dueTime = dueTime;
+        this.isDone = isDone;
+        this.userId = userId;
+        this.folderId = folderId;
+    }
+
+    // Constructor with args and no ID
+    public Task(String title, String description, String dueDate, String dueTime, boolean isDone, int userId, Long folderId) {
         this.title = title;
         this.description = description;
         this.dueDate = dueDate;
