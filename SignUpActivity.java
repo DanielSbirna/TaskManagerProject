@@ -44,31 +44,31 @@ public class SignUpActivity extends AppCompatActivity {
             String password = passwordInput.getText().toString().trim();
 
             // Validations
-            if (fullName.isEmpty()) { // Add validation for nameInput
+            if (fullName.isEmpty()) {
                 nameInput.setError("Name cannot be empty");
                 Toast.makeText(SignUpActivity.this, "Name cannot be empty", Toast.LENGTH_SHORT).show();
-                return; // Stop execution
+                return;
             }
-            if (username.isEmpty()) { // Check for empty username specifically
+            if (username.isEmpty()) {
                 usernameInput.setError("Username cannot be empty");
                 Toast.makeText(SignUpActivity.this, "Please enter a username", Toast.LENGTH_SHORT).show();
-                return; // Stop execution
+                return;
             }
-            if (password.isEmpty()) { // Check for empty password specifically
+            if (password.isEmpty()) {
                 passwordInput.setError("Password cannot be empty");
                 Toast.makeText(SignUpActivity.this, "Please enter a password", Toast.LENGTH_SHORT).show();
-                return; // Stop execution
+                return;
             }
 
             if (username.length() < 8) {
                 usernameInput.setError("Username must be at least 8 characters long");
                 Toast.makeText(SignUpActivity.this, "Username must be at least 8 characters long", Toast.LENGTH_SHORT).show();
-                return; // Stop execution
+                return;
             }
             if (password.length() < 10 || !password.matches(".*[0-9].*") || !password.matches(".*[a-zA-Z].*")) {
                 passwordInput.setError("Password must be at least 10 characters and contain numbers and letters");
                 Toast.makeText(SignUpActivity.this, "Password must be at least 10 characters and contain numbers and letters", Toast.LENGTH_SHORT).show();
-                return; // Stop execution
+                return;
             }
 
             // If all validations pass, call registerUser
@@ -100,6 +100,7 @@ public class SignUpActivity extends AppCompatActivity {
             Toast.makeText(SignUpActivity.this, "Sign up successful!", Toast.LENGTH_LONG).show();
             //Go to LoginScreen
             Intent intent = new Intent(SignUpActivity.this, LoginActivity.class);
+            intent.putExtra("CURRENT_USER_ID", newRowId);
             startActivity(intent);
             finish();
         }else{
