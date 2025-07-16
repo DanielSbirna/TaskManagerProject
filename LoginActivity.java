@@ -20,8 +20,8 @@ import com.example.taskmanager.data.PasswordHasher;
 
 import android.util.Log;
 
-public class LoginScreen extends AppCompatActivity {
-    private static final String TAG = "LoginScreen";
+public class LoginActivity extends AppCompatActivity {
+    private static final String TAG = "LoginActivity";
     private EditText usernameInput;
     private EditText passwordInput;
     private CheckBox rememberMeCheckbox;
@@ -62,70 +62,87 @@ public class LoginScreen extends AppCompatActivity {
             // validations
             if (username.isEmpty() || password.isEmpty()) {
                 //both empty
-                Toast.makeText(LoginScreen.this, "Please enter a username and password", Toast.LENGTH_SHORT).show();
+                Toast.makeText(LoginActivity.this, "Please enter a username and password", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            // validation from db
-            if (authenticateUser(username, password)) {
-                Toast.makeText(LoginScreen.this, "Login Successful!", Toast.LENGTH_SHORT).show();
+            int userId = getIntent().getIntExtra("CURRENT_USER_ID", 0);
+
+            // Check if the returned userId is valid (not -1)
+            if (userId != -1) {
+                Toast.makeText(LoginActivity.this, "Login Successful!", Toast.LENGTH_SHORT).show();
 
                 // handle checkbox state after successful login
                 if (rememberMeCheckbox.isChecked()) {
                     loginPrefsEditor.putBoolean("saveLogin", true); // save the checkbox state
                     loginPrefsEditor.putString("username", username); // save the username for pre-fill
-                    loginPrefsEditor.putString("password", password); // save the password for pre-fill
-                    loginPrefsEditor.apply();
+                    loginPrefsEditor.apply(); // commit
                 } else {
-                    loginPrefsEditor.clear();
-                    loginPrefsEditor.apply();
+                    loginPrefsEditor.clear(); //clear
+                    loginPrefsEditor.apply(); //commit
                 }
 
                 Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                intent.putExtra("CURRENT_USER_ID", userId); // Pass the user ID
                 startActivity(intent);
-                finish(); // closing the Login so 'back' doesn't go back to it
+                finish();
             } else {
                 Toast.makeText(this, "Invalid Username or Password", Toast.LENGTH_SHORT).show();
             }
-
         });
 
         // OnClickListener for the SIGN UP
         signUpButton.setOnClickListener(v -> {
-            // Intent to go from LoginScreen to SignUpScreen
+            // Intent to go from LoginActivity to SignUpScreen
             Intent intent = new Intent(LoginActivity.this, SignUpActivity.class);
             startActivity(intent); // Start the SignUpActivity
         });
     }
-    private boolean authenticateUser(String username, String plainPassword){
+    
+    private int authenticateUser(String username, String plainPassword){
         Cursor cursor = null;
-        boolean isAuthenticated = false;
+        int userId;
 
         try {
-            // Use dbHelper to get user credentials
             cursor = dbHelper.getUserCredentials(username);
 
-            // if username matches, attempt to verify the password
-            if(cursor != null && cursor.moveToFirst()){
+            if (cursor != null && cursor.moveToFirst()) {
                 String storedHashedPassword = cursor.getString(cursor.getColumnIndexOrThrow(TaskContract.UserEntry.COLUMN_NAME_PASSWORD));
                 String storedSaltString = cursor.getString(cursor.getColumnIndexOrThrow(TaskContract.UserEntry.COLUMN_NAME_SALT));
 
-                // Convert the stored salt string back to a byte array
+                // Get the user ID from the cursor!
+                userId = cursor.getInt(cursor.getColumnIndexOrThrow(TaskContract.UserEntry._ID));
+
                 byte[] storedSalt = PasswordHasher.stringToSalt(storedSaltString);
 
-                // Use the PasswordHasher to verify the entered plain password against the stored hash and salt
-                if (storedSalt != null) { // Ensure salt was successfully decoded
-                    isAuthenticated = PasswordHasher.verifyPassword(plainPassword, storedHashedPassword, storedSalt);
+                if (storedSalt != null) {
+                    if (PasswordHasher.verifyPassword(plainPassword, storedHashedPassword, storedSalt)) {
+                        // Password verified successfully!
+                        Log.d(TAG, "Authentication successful for user: " + username + ", ID: " + userId);
+                        // userId is already correctly set here
+                    } else {
+                        // Password verification failed
+                        Log.d(TAG, "Password verification failed for user: " + username);
+                        userId = -1; // Reset userId to -1 as authentication failed
+                    }
+                } else {
+                    Log.e(TAG, "Stored salt is null for user: " + username);
+                    userId = -1; // Reset userId to -1 as authentication failed
                 }
+            } else {
+                // User not found in database
+                Log.d(TAG, "User not found: " + username);
+                userId = -1; // Reset userId to -1 as authentication failed
             }
         } catch (Exception e) {
-            Log.e(TAG, "Error during database operation for login: " + e.getMessage(), e); // Log any exceptions during database operation for debugging
+            Log.e(TAG, "Error during database operation for login: " + e.getMessage(), e);
+            userId = -1; // Ensure userId is -1 on error
         } finally {
             if (cursor != null) {
-                cursor.close(); // prevent resource leaks
+                cursor.close();
             }
         }
-        return isAuthenticated;
+        return userId;
     }
 
     @Override
