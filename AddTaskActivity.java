@@ -56,7 +56,18 @@ public class AddTaskActivity extends AppCompatActivity implements AddFolderAdapt
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_task_screen);
 
-        dbHelper = new TaskDbHelper(this); // Initialize DB Helper
+        dbHelper = new TaskDbHelper(this);
+
+        userId = getIntent().getIntExtra("CURRENT_USER_ID", -1);
+        Log.d(TAG, "MainActivity onCreate: Retrieved userId from Intent: " + userId);
+
+        if (userId == -1) {
+            Toast.makeText(this, "User ID not found. Please log in again.", Toast.LENGTH_LONG).show();
+            Log.d(TAG, "MainActivity onCreate: Retrieved userId from Intent: " + userId);
+            finish();
+            return;
+        }
+        Log.d(TAG, "Retrieved userId: " + userId);
 
         // Initialize UI elements
         backButton = findViewById(R.id.back_button);
@@ -93,6 +104,7 @@ public class AddTaskActivity extends AppCompatActivity implements AddFolderAdapt
         // Back button functionality
         backButton.setOnClickListener(v -> {
             Intent intent = new Intent(AddTaskActivity.this, MainActivity.class);
+            intent.putExtra("CURRENT_USER_ID", userId); // passing userId back to MainActivity
             startActivity(intent);
             finish();
         });
@@ -130,7 +142,7 @@ public class AddTaskActivity extends AppCompatActivity implements AddFolderAdapt
 
     private void loadFoldersForSelection() {
         Log.d(TAG, "Loading folders for selection...");
-        List<Folder> folders = dbHelper.getAllFolders();
+        List<Folder> folders = dbHelper.getFoldersForUser(userId);
         // Add a "No Folder" option at the beginning if it doesn't already exist
         boolean noFolderExists = false;
         for (Folder f : folders) {
@@ -140,7 +152,7 @@ public class AddTaskActivity extends AppCompatActivity implements AddFolderAdapt
             }
         }
         if (!noFolderExists) {
-            folders.add(0, new Folder(-1, "No Folder", 0)); // Use a specific ID like -1 for "No Folder"
+            folders.add(0, new Folder(-1, "No Folder", userId, 0));
             Log.d(TAG, "Added 'No Folder' option.");
         }
         folderList.clear();
@@ -148,6 +160,8 @@ public class AddTaskActivity extends AppCompatActivity implements AddFolderAdapt
         if (addFolderAdapter != null) {
             addFolderAdapter.notifyDataSetChanged();
             Log.d(TAG, "Folder selection adapter notified. Current folderList size: " + folderList.size());
+        } else {
+            Log.w(TAG, "addFolderAdapter is null in loadFoldersForSelection. Adapter setup issue?");
         }
     }
 
@@ -201,8 +215,8 @@ public class AddTaskActivity extends AppCompatActivity implements AddFolderAdapt
     private void saveTask() {
         String title = addTaskTitle.getText().toString().trim();
         String description = descriptionHint.getText().toString().trim();
-        String dueDate = dayStartPick.getText().toString(); // Using start date as due date
-        String dueTime = timeStartPick.getText().toString(); // Using start time as due time
+        String dueDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(startCalendar.getTime());
+        String dueTime = new SimpleDateFormat("HH:mm", Locale.getDefault()).format(startCalendar.getTime());
 
         if (title.isEmpty()) {
             addTaskTitle.setError("Title cannot be empty");
@@ -210,12 +224,25 @@ public class AddTaskActivity extends AppCompatActivity implements AddFolderAdapt
             return;
         }
 
+        long rawSelectedFolderId = addFolderAdapter.getSelectedFolderId();
+        Long folderIdToAssign = (rawSelectedFolderId == -1) ? null : rawSelectedFolderId;
+        Log.d(TAG, "Selected Folder ID from adapter: " + rawSelectedFolderId + " (converted to: " + folderIdToAssign + " for DB)");
+
         // Get selected folder ID from the adapter
         long selectedFolderId = addFolderAdapter.getSelectedFolderId();
         Log.d(TAG, "Selected Folder ID from adapter: " + selectedFolderId);
 
-        Task newTask = new Task(title, description, dueDate, dueTime, false); // New tasks are not completed by default
-        long taskId = dbHelper.insertTask(newTask, selectedFolderId);
+        Task newTask = new Task(
+                title,             // String title
+                description,       // String description
+                dueDate,           // String dueDate
+                dueTime,           // String dueTime
+                false,             // boolean isDone
+                userId,     // int userId
+                folderIdToAssign   // Long folderId
+        );
+        
+        int taskId = dbHelper.insertTask(newTask,userId, folderIdToAssign);
 
         if (taskId != -1) {
             Toast.makeText(this, "Task saved successfully!", Toast.LENGTH_SHORT).show();
@@ -227,7 +254,7 @@ public class AddTaskActivity extends AppCompatActivity implements AddFolderAdapt
                 if (folderToUpdate != null) {
                     int currentComponents = folderToUpdate.getComponents();
                     int newComponents = currentComponents + 1;
-                    dbHelper.updateFolderTaskCount(selectedFolderId, newComponents);
+                    dbHelper.updateFolderTaskCount(selectedFolderId, newComponents, userId);
                     Log.d(TAG, "Updated folder ID " + selectedFolderId + " count from " + currentComponents + " to " + newComponents);
                 } else {
                     Log.e(TAG, "Failed to retrieve folder with ID " + selectedFolderId + " to update count.");
@@ -237,6 +264,7 @@ public class AddTaskActivity extends AppCompatActivity implements AddFolderAdapt
             }
 
             Intent intent = new Intent(AddTaskActivity.this, MainActivity.class);
+            intent.putExtra("CURRENT_USER_ID", userId); // pass the userId back to MainActivity
             startActivity(intent);
             finish();
         } else {
