@@ -25,23 +25,34 @@ import java.util.List;
 
 public class FolderActivity extends AppCompatActivity implements FolderAdapter.OnItemClickListener {
 
-    private static final String TAG = "FolderScreen"; // Added for logging
+    private static final String TAG = "FolderScreen";
     private RecyclerView folderRecyclerView;
     private FolderAdapter folderAdapter;
     private List<Folder> folderList;
     private ImageButton backButton;
     private ImageButton addFolderButton;
-    private TaskDbHelper dbHelper; // Database helper instance
+    private TaskDbHelper dbHelper;
+    private int userId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_folder_screen);
-        Log.d(TAG, "onCreate: FolderScreen started."); // Added logging
+        Log.d(TAG, "onCreate: FolderScreen started.");
 
         try {
             dbHelper = new TaskDbHelper(this);
             Log.d(TAG, "TaskDbHelper initialized.");
+
+            userId = getIntent().getIntExtra("CURRENT_USER_ID", 0);
+            if (userId == -1) {
+                // Handle case where user ID is missing (e.g., not logged in, or intent error)
+                Toast.makeText(this, "User ID not found. Please log in again.", Toast.LENGTH_LONG).show();
+                Log.e(TAG, "userId not found in Intent. Finishing activity.");
+                finish(); // Close this activity
+                return; // Stop further onCreate execution
+            }
+            Log.d(TAG, "Retrieved userId: " + userId);
 
             folderRecyclerView = findViewById(R.id.folder_list_recyclerView);
             backButton = findViewById(R.id.back_button);
@@ -49,8 +60,9 @@ public class FolderActivity extends AppCompatActivity implements FolderAdapter.O
             Log.d(TAG, "UI elements initialized.");
 
             folderList = new ArrayList<>();
+            
             // Initialize adapter BEFORE loading data, so it's ready to be notified
-            folderAdapter = new FolderAdapter(folderList); // CHANGE THIS INSTANTIATION to FolderAdapter
+            folderAdapter = new FolderAdapter(folderList);
             folderRecyclerView.setLayoutManager(new LinearLayoutManager(this));
             folderRecyclerView.setAdapter(folderAdapter);
             folderAdapter.setOnItemClickListener(this);
@@ -63,6 +75,7 @@ public class FolderActivity extends AppCompatActivity implements FolderAdapter.O
             backButton.setOnClickListener(v -> {
                 Log.d(TAG, "Back button clicked. Navigating to MainActivity.");
                 Intent intent = new Intent(FolderActivity.this, MainActivity.class);
+                intent.putExtra("CURRENT_USER_ID", userId);
                 startActivity(intent);
                 finish();
             });
@@ -71,6 +84,7 @@ public class FolderActivity extends AppCompatActivity implements FolderAdapter.O
                 Log.d(TAG, "Add Folder button clicked. Showing dialog.");
                 showCreateFolderDialog();
             });
+            
         } catch (Exception e) {
             Log.e(TAG, "Error during FolderScreen onCreate: " + e.getMessage(), e);
             Toast.makeText(this, "Error loading folders: " + e.getMessage(), Toast.LENGTH_LONG).show();
@@ -88,7 +102,7 @@ public class FolderActivity extends AppCompatActivity implements FolderAdapter.O
     // Loads folders from the database and updates the RecyclerView
     private void loadFoldersFromDatabase() {
         Log.d(TAG, "Attempting to load folders from database...");
-        List<Folder> folders = dbHelper.getAllFolders();
+        List<Folder> folders = dbHelper.getAllFolders(userId);
         Log.d(TAG, "Folders retrieved from DB. Count: " + folders.size());
         folderList.clear();
         folderList.addAll(folders);
@@ -138,7 +152,7 @@ public class FolderActivity extends AppCompatActivity implements FolderAdapter.O
                 Toast.makeText(FolderActivity.this, "Folder name cannot be empty", Toast.LENGTH_SHORT).show();
                 Log.w(TAG, "Attempted to save empty folder name.");
             } else {
-                long newFolderId = dbHelper.insertFolder(folderName);
+                long newFolderId = dbHelper.insertFolder(folderName, userId);
                 if (newFolderId != -1) {
                     Toast.makeText(FolderActivity.this, "Folder '" + folderName + "' created!", Toast.LENGTH_SHORT).show();
                     Log.d(TAG, "Folder '" + folderName + "' created with ID: " + newFolderId);
