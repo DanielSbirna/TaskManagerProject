@@ -24,25 +24,37 @@ import java.util.List;
 import java.util.Locale; // case-insensitive search
 
 public class MainActivity extends AppCompatActivity implements TaskAdapter.OnItemClickListener {
-    private static final String TAG = "MainActivity"; // Added TAG for logging
+    private static final String TAG = "MainActivity";
     private RecyclerView recyclerView;
     private Button folderPageButton;
     private ImageButton fabAddTask;
     private EditText searchHint;
-    private List<Task> allTasksCache;
     private TaskAdapter taskAdapter;
     private List<Task> tasksList;
     private TaskDbHelper dbHelper;
+    private int userId;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_screen);
-        Log.d(TAG, "onCreate: MainActivity started."); // Added logging
+        Log.d(TAG, "onCreate: MainActivity started.");
+
+        userId = getIntent().getIntExtra("CURRENT_USER_ID", 0);
+        Log.d(TAG, "Received CURRENT_USER_ID: " + userId);
+
+        if (userId == -1) {
+            Log.e(TAG, "Invalid user ID received. Redirecting to LoginActivity.");
+            Toast.makeText(this, "Session expired. Please log in again.", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+            startActivity(intent);
+            finish();
+            return;
+        }
 
         dbHelper = new TaskDbHelper(this);
-        Log.d(TAG, "TaskDbHelper initialized."); // Added logging
+        Log.d(TAG, "TaskDbHelper initialized.");
         
         recyclerView= findViewById(R.id.recycler_view_tasks);
         recyclerView = findViewById(R.id.recycler_view_tasks);
@@ -53,13 +65,12 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnIte
         ImageButton proceedSearchButton = findViewById(R.id.proceed_search);
 
         tasksList = new ArrayList<>();
-        allTasksCache = new ArrayList<>();
         
         //LinearLayoutManager for the RecyclerView
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         //initialize TaskAdapter with the list of tasks
-        taskAdapter = new TaskAdapter(tasksList);
+        taskAdapter = new TaskAdapter(new ArrayList<>());
         taskAdapter.setOnItemClickListener(this);
 
         //set adapter to recycler
@@ -69,6 +80,7 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnIte
         fabAddTask.setOnClickListener(v -> {
             Toast.makeText(MainActivity.this, "Add new task clicked!", Toast.LENGTH_SHORT).show();
             Intent intent = new Intent(MainActivity.this, AddTaskActivity.class);
+            intent.putExtra("CURRENT_USER_ID", userId);
             startActivity(intent);
         });
 
@@ -76,12 +88,13 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnIte
         folderPageButton.setOnClickListener(v ->{
             Toast.makeText(MainActivity.this, "Folder button clicked!", Toast.LENGTH_SHORT).show();
             Intent intent = new Intent(MainActivity.this, FolderActivity.class);
+            intent.putExtra("CURRENT_USER_ID", userId);
             startActivity(intent);
         });
 
         proceedSearchButton.setOnClickListener(v -> {
             String query = searchHint.getText().toString().trim();
-            Log.d(TAG, "Search button clicked. Query: '" + query + "'"); // Added logging
+            Log.d(TAG, "Search button clicked. Query: '" + query + "'");
             filterTasks(query);
         });
 
@@ -93,7 +106,7 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnIte
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 String query = s.toString().trim(); // Get the current text from the EditText
-                Log.d(TAG, "onTextChanged: Current query: '" + query + "'"); // Added logging
+                Log.d(TAG, "onTextChanged: Current query: '" + query + "'");
                 filterTasks(query); // Filter tasks based on the current input
             }
 
@@ -115,14 +128,14 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnIte
     }
 
     private void loadTasksFromDatabase() {
-        List<Task> loadedTasks = dbHelper.getAllTasks();
-        allTasksCache.clear(); // Clear the cache first
-        allTasksCache.addAll(loadedTasks); // Populate the cache with all tasks
-        Log.d(TAG, "All tasks loaded from database. Count: " + allTasksCache.size());
+        List<Task> loadedTasks = dbHelper.getTasksForUserAndFolder(userId, null, "due_date");
+        tasksList.clear(); // Clear the cache first
+        tasksList.addAll(loadedTasks); // Populate the cache with all tasks
+        Log.d(TAG, "All tasks loaded from database. Count: " + tasksList.size());
 
         if (taskAdapter != null) {
-            taskAdapter.setTasks(allTasksCache); // Use the new setTasks method
-
+            taskAdapter.setTasks(tasksList);
+            taskAdapter.notifyDataSetChanged();
         }
     }
 
@@ -130,10 +143,10 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnIte
         List<Task> filteredList = new ArrayList<>();
         if (query.isEmpty()) {
             Log.d(TAG, "Filtering with empty query. Displaying all tasks.");
-            filteredList.addAll(allTasksCache);
+            filteredList.addAll(tasksList);
         } else {
             String lowerCaseQuery = query.toLowerCase(Locale.getDefault());
-            for (Task task : allTasksCache) {
+            for (Task task : tasksList) {
                 if (task.getTitle().toLowerCase(Locale.getDefault()).contains(lowerCaseQuery) ||
                         (task.getDescription() != null && task.getDescription().toLowerCase(Locale.getDefault()).contains(lowerCaseQuery))) {
                     filteredList.add(task);
@@ -142,6 +155,7 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnIte
             Log.d(TAG, "Filtered tasks for query '" + query + "'. Found: " + filteredList.size() + " tasks.");
         }
         taskAdapter.setTasks(filteredList);
+        taskAdapter.notifyDataSetChanged();
     }
 
     @Override
