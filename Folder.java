@@ -1,37 +1,35 @@
 public class Folder {
-    private long id;
+    private int id;
     private String folderName;
-    private static int components; // how many tasks has in it
+    private static int componentsCount; // how many tasks has in it
+    private int userId;
 
-    // Constructor with args including ID
-    public Folder (long id, String folderName, int components){
+    // Constructor with args 
+    public Folder (int id, String folderName, int userId, int componentsCount){
         this.id = id;
         this.folderName = folderName;
-        this.components = components;
-    }
-
-    // Constructor with args (for new folders before DB assignment)
-    public Folder (String folderName, int components){
-        this.folderName = folderName;
-        this.components = components;
+        this.userId = userId;
+        this.componentsCount = componentsCount;
     }
 
     //Constructor with no args
-    public Folder (){
-        id = -1; // Default invalid ID
+    public Folder () {
+        id = -1;
         folderName = "Unnamed";
-        components = 0;
+        userId = -1;
+        componentsCount = 0;
     }
 
     //Copy constructor
-    public Folder(Folder other){
+    public Folder (Folder other) {
         this.id = other.id;
         this.folderName = other.folderName;
-        this.components = other.components;
+        this.userId = other.userId;
+        this.componentsCount = other.componentsCount;
     }
 
     //Get
-    public long getId() {
+    public int getId() {
         return id;
     }
     
@@ -39,17 +37,21 @@ public class Folder {
         return folderName;
     }
 
-    public int getComponents(){
-        return components;
+    public int getComponentsCount(){
+        return componentsCount;
     }
 
     //Set
-     public void setId(long id) {
+     public void setId(int id) {
         this.id = id;
     }
     
     public void setFolderName(String folderName){
         this.folderName = folderName;
+    }
+
+    public void setUserId(int userId) {
+        this.userId = userId;
     }
 
     public void setComponents(int components) {
