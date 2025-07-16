@@ -1,39 +1,23 @@
 public class Task {
-    private long id;
+    private int id;
     private String title;
     private String description;
     private String dueDate;
     private String dueTime;
     private boolean isDone;
+    private int userId;
+    private Long folderId; // folderId is Long - warper class for long - so it can be also 'null'
 
     // Constructor with args with ID
-    public Task (long id, String title, String description, String dueDate, String dueTime, boolean isDone){
+    public Task (int id, String title, String description, String dueDate, String dueTime, boolean isDone, int userId, Long folderId){
         this.id = id;
         this.title = title;
         this.description = description;
         this.dueDate = dueDate;
         this.dueTime = dueTime;
         this.isDone = isDone;
-    }
-
-    // Constructor with args
-    public Task (String title, String description, String dueDate, String dueTime, boolean isDone){
-        this.id=-1;
-        this.title = title;
-        this.description = description;
-        this.dueDate = dueDate;
-        this.dueTime = dueTime;
-        this.isDone = isDone;
-    }
-
-    //Constructor with no args
-    public Task (){
-        id = -1;
-        title = "Meal Prep";
-        description = "Make your next meal";
-        dueDate = "02.07.2025";
-        dueTime = "15.00";
-        isDone = false;
+        this.userId = userId;
+        this.folderId = folderId;
     }
 
     //Copy connstrctor
@@ -44,6 +28,8 @@ public class Task {
         this.dueDate = other.dueDate;
         this.dueTime = other.dueTime;
         this.isDone = other.isDone;
+        this.userId = other.userId;
+        this.folderId = other.folderId;
     }
 
     //Get
@@ -72,7 +58,7 @@ public class Task {
     }
 
     //Set
-    public void setId(long id) {
+    public void setId(int id) {
         this.id = id;
     }
     
@@ -95,4 +81,12 @@ public class Task {
     public void setIsDone (String isDone){
         this.isDone = isDone;
     }
+
+    public void setUserId(int userId) {
+        this.userId = userId;
+    }
+
+    public void setFolderId(Long folderId) {
+        this.folderId = folderId;
+    } 
 }
