@@ -12,7 +12,8 @@ public final class TaskContract {
         public static final String COLUMN_NAME_DUE_DATE = "due_date";
         public static final String COLUMN_NAME_DUE_TIME = "due_time";
         public static final String COLUMN_NAME_COMPLETED = "completed"; // 0 = false ; 1 = true;
-
+        public static final String COLUMN_NAME_FOLDER_ID = "folder_id";
+        public static final String COLUMN_NAME_USER_ID = "user_id";
     }
 
     public static class UserEntry implements BaseColumns{
@@ -26,6 +27,7 @@ public final class TaskContract {
      public static class FolderEntry implements BaseColumns{
         public static final String TABLE_NAME ="folder";
         public static final String COLUMN_NAME_FOLDER_NAME = "folder_name";
+        public static final String COLUMN_NAME_USER_ID = "user_id";
         public static final String COLUMN_NAME_COMPONENTS_COUNT ="components_count";
     }
 }
