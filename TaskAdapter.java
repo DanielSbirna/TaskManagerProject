@@ -5,7 +5,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.TextView;
-import android.widget.CompoundButton; // CheckBox listener
+import android.widget.CompoundButton;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -89,6 +89,22 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         return taskList.size();
     }
 
+    // Problem solving by safely sync between task List and filtered
+    public Task getTaskAt(int position){
+        return taskList.get(position);
+    }
+
+    // method to remove an item from the list
+    public void removeItem(int position) {
+        taskList.remove(position);
+        notifyItemRemoved(position);
+    }
+
+    // method to restore a previously removed item
+    public void restoreItem(Task item, int position) {
+        taskList.add(position, item);
+        notifyItemInserted(position);
+    }
 
     // TaskViewHolder Class
 
