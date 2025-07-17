@@ -94,7 +94,7 @@ public class SignUpActivity extends AppCompatActivity {
         }
 
         // Insert new user using TaskDbHelper
-        long newRowId = dbHelper.insertUser(fullName, username, hashedPassword, saltString);
+        int newRowId = dbHelper.insertUser(fullName, username, hashedPassword, saltString);
 
         if(newRowId != OPERATION_FAIL){
             Toast.makeText(SignUpActivity.this, "Sign up successful!", Toast.LENGTH_LONG).show();
