@@ -78,6 +78,7 @@ public class FolderActivity extends AppCompatActivity implements FolderAdapter.O
                 intent.putExtra("CURRENT_USER_ID", userId);
                 startActivity(intent);
                 finish();
+                Log.d(TAG, "Navigating back to MainActivity.");
             });
 
             addFolderButton.setOnClickListener(v -> {
@@ -102,7 +103,7 @@ public class FolderActivity extends AppCompatActivity implements FolderAdapter.O
     // Loads folders from the database and updates the RecyclerView
     private void loadFoldersFromDatabase() {
         Log.d(TAG, "Attempting to load folders from database...");
-        List<Folder> folders = dbHelper.getAllFolders(userId);
+        List<Folder> folders = dbHelper.getFoldersForUser (userId);
         Log.d(TAG, "Folders retrieved from DB. Count: " + folders.size());
         folderList.clear();
         folderList.addAll(folders);
