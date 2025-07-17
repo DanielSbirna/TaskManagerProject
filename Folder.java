@@ -1,7 +1,7 @@
 public class Folder {
     private int id;
     private String folderName;
-    private static int componentsCount; // how many tasks has in it
+    private int componentsCount; // how many tasks has in it
     private int userId;
 
     // Constructor with args 
@@ -12,7 +12,7 @@ public class Folder {
         this.componentsCount = componentsCount;
     }
 
-    //Constructor with no args
+    // Constructor with no args
     public Folder () {
         id = -1;
         folderName = "Unnamed";
@@ -20,7 +20,7 @@ public class Folder {
         componentsCount = 0;
     }
 
-    //Copy constructor
+    // Copy constructor
     public Folder (Folder other) {
         this.id = other.id;
         this.folderName = other.folderName;
@@ -28,7 +28,7 @@ public class Folder {
         this.componentsCount = other.componentsCount;
     }
 
-    //Get
+    // Getters
     public int getId() {
         return id;
     }
@@ -37,11 +37,15 @@ public class Folder {
         return folderName;
     }
 
+    public int getUserId() {
+        return userId;
+    }
+
     public int getComponentsCount(){
         return componentsCount;
     }
 
-    //Set
+    // Seters
      public void setId(int id) {
         this.id = id;
     }
@@ -54,7 +58,7 @@ public class Folder {
         this.userId = userId;
     }
 
-    public void setComponents(int components) {
+    public void setComponentsCount(int componentsCount) {
         this.components = components;
     }
 }
