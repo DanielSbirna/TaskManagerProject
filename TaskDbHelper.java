@@ -90,7 +90,7 @@ public class TaskDbHelper extends SQLiteOpenHelper {
     }
 
     // Inserts a new user int the database
-    public long insertUser(String fullName, String username, String hashedPassword, String salt){
+    public int insertUser(String fullName, String username, String hashedPassword, String salt){
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(TaskContract.UserEntry.COLUMN_NAME_FULL_NAME, fullName);
@@ -163,7 +163,7 @@ public class TaskDbHelper extends SQLiteOpenHelper {
     }
 
     // Retrieves folders for a specific user (no parent folder filter needed)
-    public List<Folder> getAllFolders(int userId) {
+    public List<Folder> getFoldersForUser(int userId) {
         List<Folder> folderList = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = null;
@@ -193,7 +193,7 @@ public class TaskDbHelper extends SQLiteOpenHelper {
                 int nameIndex = cursor.getColumnIndexOrThrow(TaskContract.FolderEntry.COLUMN_NAME_FOLDER_NAME);
                 int userIdColIndex = cursor.getColumnIndexOrThrow(TaskContract.FolderEntry.COLUMN_NAME_USER_ID);
                 int componentsCountIndex = cursor.getColumnIndexOrThrow(TaskContract.FolderEntry.COLUMN_NAME_COMPONENTS_COUNT);
-                
+
                 do {
                     // Changed to getInt() as per your preference for 'id'
                     int id = cursor.getInt(idIndex);
