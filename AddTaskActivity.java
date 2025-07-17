@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Locale;
 
 public class AddTaskActivity extends AppCompatActivity implements AddFolderAdapter.OnItemClickListener {
+    private final String TAG = "AddTaskActivity";
     private ImageButton backButton;
     private EditText addTaskTitle;
     private EditText descriptionHint;
@@ -39,17 +40,15 @@ public class AddTaskActivity extends AppCompatActivity implements AddFolderAdapt
     private AddFolderAdapter addFolderAdapter;
     private List<Folder> folderList;
     private Switch allDaySwitch;
-    private ConstraintLayout startDatePickerLayout;
-    private ConstraintLayout endDatePickerLayout;
-    private TextView dayStartPick;
-    private TextView timeStartPick;
-    private TextView dayEndPick;
-    private TextView timeEndPick;
+    private ConstraintLayout dueDatePickerLayout;
+    private TextView dayDuePick;
+    private TextView timeDuePick;
     private TextView saveButton;
     private TaskDbHelper dbHelper;
+    private Calendar dueCalendar;
+    private Spinner repeatSpinner;
 
-    private Calendar startCalendar;
-    private Calendar endCalendar;
+    private int userId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,24 +74,17 @@ public class AddTaskActivity extends AppCompatActivity implements AddFolderAdapt
         descriptionHint = findViewById(R.id.description_hint);
         recyclerViewFolder = findViewById(R.id.recycler_view_folder);
         allDaySwitch = findViewById(R.id.all_day_switch);
-        startDatePickerLayout = findViewById(R.id.start_date_picker);
-        endDatePickerLayout = findViewById(R.id.end_date_picker);
-        dayStartPick = findViewById(R.id.day_start_pick);
-        timeStartPick = findViewById(R.id.time_start_pick);
-        dayEndPick = findViewById(R.id.day_end_pick);
-        timeEndPick = findViewById(R.id.time_end_pick);
+        dueDatePickerLayout = findViewById(R.id.due_date_picker);
+        dayDuePick = findViewById(R.id.day_due_pick);
+        timeDuePick = findViewById(R.id.time_due_pick);
         saveButton = findViewById(R.id.save_button);
-
+        
         // Initialize Calendars with current time
-        startCalendar = Calendar.getInstance();
-        endCalendar = Calendar.getInstance();
-        endCalendar.add(Calendar.HOUR_OF_DAY, 1); // Default end time 1 hour after start
+        dueCalendar = Calendar.getInstance();
 
         // Set initial date/time display
-        updateDateTimeDisplay(dayStartPick, timeStartPick, startCalendar);
-        updateDateTimeDisplay(dayEndPick, timeEndPick, endCalendar);
-
-
+        updateDateTimeDisplay(dayDuePick, timeDuePick, dueCalendar);
+        
         // Setup Folder RecyclerView
         folderList = new ArrayList<>();
         loadFoldersForSelection(); // Load folders from DB
@@ -113,28 +105,20 @@ public class AddTaskActivity extends AppCompatActivity implements AddFolderAdapt
         allDaySwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
                 // If "All Day" is checked, hide time pickers and set default all-day times
-                timeStartPick.setVisibility(View.GONE);
-                timeEndPick.setVisibility(View.GONE);
+                timeDuePick.setVisibility(View.GONE);
                 // Set start of day and end of day
-                startCalendar.set(Calendar.HOUR_OF_DAY, 0);
-                startCalendar.set(Calendar.MINUTE, 0);
-                endCalendar.set(Calendar.HOUR_OF_DAY, 23);
-                endCalendar.set(Calendar.MINUTE, 59);
+                dueCalendar.set(Calendar.HOUR_OF_DAY, 0);
+                dueCalendar.set(Calendar.MINUTE, 0);
             } else {
                 // If "All Day" is unchecked, show time pickers
-                timeStartPick.setVisibility(View.VISIBLE);
-                timeEndPick.setVisibility(View.VISIBLE);
+                timeDuePick.setVisibility(View.VISIBLE);
                 // Reset times to current or a default interval if needed
-                startCalendar = Calendar.getInstance();
-                endCalendar = Calendar.getInstance();
-                endCalendar.add(Calendar.HOUR_OF_DAY, 1);
+                dueCalendar = Calendar.getInstance();
             }
-            updateDateTimeDisplay(dayStartPick, timeStartPick, startCalendar);
-            updateDateTimeDisplay(dayEndPick, timeEndPick, endCalendar);
+            updateDateTimeDisplay(dayDuePick, timeDuePick, dueCalendar);
         });
         // Date and Time Picker Listeners
-        startDatePickerLayout.setOnClickListener(v -> showDateTimePicker(true));
-        endDatePickerLayout.setOnClickListener(v -> showDateTimePicker(false));
+        dueDatePickerLayout.setOnClickListener(v -> showDateTimePicker());
 
         // Save Button Listener
         saveButton.setOnClickListener(v -> saveTask());
@@ -143,10 +127,10 @@ public class AddTaskActivity extends AppCompatActivity implements AddFolderAdapt
     private void loadFoldersForSelection() {
         Log.d(TAG, "Loading folders for selection...");
         List<Folder> folders = dbHelper.getFoldersForUser(userId);
-        // Add a "No Folder" option at the beginning if it doesn't already exist
+        // Add a "Unnamed" option at the beginning if it doesn't already exist
         boolean noFolderExists = false;
         for (Folder f : folders) {
-            if ("No Folder".equals(f.getFolderName())) {
+            if ("Unnamed".equals(f.getFolderName())) {
                 noFolderExists = true;
                 break;
             }
@@ -166,38 +150,34 @@ public class AddTaskActivity extends AppCompatActivity implements AddFolderAdapt
     }
 
     private void showDateTimePicker(final boolean isStart) {
-        final Calendar currentCalendar = isStart ? startCalendar : endCalendar;
-
+        DatePickerDialog datePickerDialog = new DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
         // Date Picker
-        DatePickerDialog datePickerDialog = new DatePickerDialog(
-                this,
-                (view, year, month, dayOfMonth) -> {
-                    currentCalendar.set(Calendar.YEAR, year);
-                    currentCalendar.set(Calendar.MONTH, month);
-                    currentCalendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+            dueCalendar.set(Calendar.YEAR, year);
+            dueCalendar.set(Calendar.MONTH, month);
+            dueCalendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
 
-                    // Time Picker (only if not all-day)
-                    if (!allDaySwitch.isChecked()) {
-                        TimePickerDialog timePickerDialog = new TimePickerDialog(
-                                this,
-                                (timeView, hourOfDay, minute) -> {
-                                    currentCalendar.set(Calendar.HOUR_OF_DAY, hourOfDay);
-                                    currentCalendar.set(Calendar.MINUTE, minute);
-                                    updateDateTimeDisplay(isStart ? dayStartPick : dayEndPick, isStart ? timeStartPick : timeEndPick, currentCalendar);
-                                },
-                                currentCalendar.get(Calendar.HOUR_OF_DAY),
-                                currentCalendar.get(Calendar.MINUTE),
-                                true // 24-hour format
-                        );
-                        timePickerDialog.show();
-                    } else {
-                        // For all-day, just update date
-                        updateDateTimeDisplay(isStart ? dayStartPick : dayEndPick, isStart ? timeStartPick : timeEndPick, currentCalendar);
-                    }
-                },
-                currentCalendar.get(Calendar.YEAR),
-                currentCalendar.get(Calendar.MONTH),
-                currentCalendar.get(Calendar.DAY_OF_MONTH)
+            // Time Picker (only if not all-day)
+            if (!allDaySwitch.isChecked()) {
+                TimePickerDialog timePickerDialog = new TimePickerDialog(
+                        this,
+                        (timeView, hourOfDay, minute) -> {
+                            dueCalendar.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                            dueCalendar.set(Calendar.MINUTE, minute);
+                            updateDateTimeDisplay(dayDuePick, timeDuePick, dueCalendar);
+                        },
+                        dueCalendar.get(Calendar.HOUR_OF_DAY),
+                        dueCalendar.get(Calendar.MINUTE),
+                        true // 24-hour format
+                );
+                timePickerDialog.show();
+            } else {
+                // For all-day, just update date
+                updateDateTimeDisplay(dayDuePick, timeDuePick, dueCalendar);
+            }
+        },
+                dueCalendar.get(Calendar.YEAR),
+                dueCalendar.get(Calendar.MONTH),
+                dueCalendar.get(Calendar.DAY_OF_MONTH)
         );
         datePickerDialog.show();
     }
@@ -209,6 +189,9 @@ public class AddTaskActivity extends AppCompatActivity implements AddFolderAdapt
         dateTextView.setText(dateFormat.format(calendar.getTime()));
         if (timeTextView.getVisibility() == View.VISIBLE) {
             timeTextView.setText(timeFormat.format(calendar.getTime()));
+        } else {
+            // If time picker is GONE (all day), ensure time TextView is empty or not shown
+            timeTextView.setText("");
         }
     }
 
@@ -267,9 +250,6 @@ public class AddTaskActivity extends AppCompatActivity implements AddFolderAdapt
             intent.putExtra("CURRENT_USER_ID", userId); // pass the userId back to MainActivity
             startActivity(intent);
             finish();
-        } else {
-            Toast.makeText(this, "Failed to save task.", Toast.LENGTH_SHORT).show();
-            Log.e(TAG, "Failed to save task to database.");
         }
     }
 
