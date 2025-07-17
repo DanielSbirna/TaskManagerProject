@@ -1,7 +1,5 @@
 package com.example.taskmanager.ui.theme;
 
-import static android.content.ContentValues.TAG;
-
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.content.Intent;
@@ -10,6 +8,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -32,7 +31,7 @@ import java.util.List;
 import java.util.Locale;
 
 public class AddTaskActivity extends AppCompatActivity implements AddFolderAdapter.OnItemClickListener {
-    private final String TAG = "AddTaskActivity";
+    private static final String TAG = "AddTaskActivity";
     private ImageButton backButton;
     private EditText addTaskTitle;
     private EditText descriptionHint;
@@ -46,7 +45,6 @@ public class AddTaskActivity extends AppCompatActivity implements AddFolderAdapt
     private TextView saveButton;
     private TaskDbHelper dbHelper;
     private Calendar dueCalendar;
-    private Spinner repeatSpinner;
 
     private int userId;
 
@@ -149,7 +147,7 @@ public class AddTaskActivity extends AppCompatActivity implements AddFolderAdapt
         }
     }
 
-    private void showDateTimePicker(final boolean isStart) {
+    private void showDateTimePicker() {
         DatePickerDialog datePickerDialog = new DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
         // Date Picker
             dueCalendar.set(Calendar.YEAR, year);
@@ -198,8 +196,8 @@ public class AddTaskActivity extends AppCompatActivity implements AddFolderAdapt
     private void saveTask() {
         String title = addTaskTitle.getText().toString().trim();
         String description = descriptionHint.getText().toString().trim();
-        String dueDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(startCalendar.getTime());
-        String dueTime = new SimpleDateFormat("HH:mm", Locale.getDefault()).format(startCalendar.getTime());
+        String dueDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(dueCalendar.getTime());
+        String dueTime = new SimpleDateFormat("HH:mm", Locale.getDefault()).format(dueCalendar.getTime());
 
         if (title.isEmpty()) {
             addTaskTitle.setError("Title cannot be empty");
@@ -233,9 +231,9 @@ public class AddTaskActivity extends AppCompatActivity implements AddFolderAdapt
 
             if (selectedFolderId != -1) {
                 // Retrieve the latest folder data from the database
-                Folder folderToUpdate = dbHelper.getFolderById(selectedFolderId);
+                Folder folderToUpdate = dbHelper.getFolderById(selectedFolderId, userId);
                 if (folderToUpdate != null) {
-                    int currentComponents = folderToUpdate.getComponents();
+                    int currentComponents = folderToUpdate.getComponentsCount();
                     int newComponents = currentComponents + 1;
                     dbHelper.updateFolderTaskCount(selectedFolderId, newComponents, userId);
                     Log.d(TAG, "Updated folder ID " + selectedFolderId + " count from " + currentComponents + " to " + newComponents);
