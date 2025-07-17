@@ -10,6 +10,7 @@ public class Task {
 
     // Constructor with args with ID
     public Task (int id, String title, String description, String dueDate, String dueTime, boolean isDone, int userId, Long folderId){
+        this.id = id;
         this.title = title;
         this.description = description;
         this.dueDate = dueDate;
@@ -30,7 +31,7 @@ public class Task {
         this.folderId = folderId;
     }
 
-    //Copy connstrctor
+    // Copy connstrctor
     public Task (Task other){
         this.id = other.id;
         this.title = other.title;
@@ -42,7 +43,7 @@ public class Task {
         this.folderId = other.folderId;
     }
 
-    //Get
+    // Getters
     public long getId() {
         return id;
     }
@@ -67,7 +68,15 @@ public class Task {
         return isDone;
     }
 
-    //Set
+    public int getUserId() {
+        return userId;
+    }
+
+    public Long getFolderId() {
+        return folderId;
+    }
+
+    // Setters
     public void setId(int id) {
         this.id = id;
     }
